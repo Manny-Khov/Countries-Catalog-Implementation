@@ -3,11 +3,13 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+
         <title>ًApplication</title>
-        @vite('resources/css/app.css')
+        <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body>
         <div id="app"></div>
         @vite('resources/js/app.js')
+        {{-- @vite('resources/css/app.css') --}}
     </body>
 </html>
