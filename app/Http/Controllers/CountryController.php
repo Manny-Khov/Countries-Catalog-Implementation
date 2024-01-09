@@ -11,29 +11,50 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class CountryController extends Controller
 {
+    const COUNTRIES_URL = 'https://restcountries.com/v3.1/all';
+    const PER_PAGE = 25;
+
     public function index(Request $request)
     {
-        $countries = Cache::remember('countries', 60 * 60, function () {
-            $response = Http::get('https://restcountries.com/v3.1/all');
-            return collect($response->json());
-        });
+        $countries = $this->getCachedCountries();
 
         $searchQuery = $request->input('search', '');
         $sortOrder = $request->input('sort', 'asc');
 
-        if (!empty($searchQuery)) {
-            $countries = $countries->filter(function ($country) use ($searchQuery) {
+        $filteredCountries = $this->filterAndSortCountries($countries, $searchQuery, $sortOrder);
+        $transformedCountries = $this->transformCountriesData($filteredCountries);
+
+        return response()->json($this->paginate($transformedCountries, $request->input('page', 1)));
+    }
+
+    private function getCachedCountries()
+    {
+        return Cache::remember('countries', 60 * 60, function () {
+            try {
+                $response = Http::get(self::COUNTRIES_URL);
+                return collect($response->json());
+            } catch (\Exception $e) {
+                return collect([]);
+            }
+        });
+    }
+
+    private function filterAndSortCountries($countries, $searchQuery, $sortOrder)
+    {
+        return $countries->when($searchQuery, function ($collection) use ($searchQuery) {
+            return $collection->filter(function ($country) use ($searchQuery) {
                 return Str::contains(strtolower($country['name']['official']), strtolower($searchQuery));
             });
-        }
-        
-        $countries = $countries->sortBy([
+        })->sortBy([
             fn ($a, $b) => $sortOrder === 'asc' ? 
                            strcmp($a['name']['official'], $b['name']['official']) : 
                            strcmp($b['name']['official'], $a['name']['official'])
         ]);
+    }
 
-        $transformedCountries = $countries->map(function ($country) {
+    private function transformCountriesData($countries)
+    {
+        return $countries->map(function ($country) {
             return [
                 'flag' => $country['flags']['png'] ?? null,
                 'officialName' => $country['name']['official'] ?? null,
@@ -45,15 +66,13 @@ class CountryController extends Controller
                                   (isset($country['idd']['suffixes']) ? implode(', ', $country['idd']['suffixes']) : '')
             ];
         });
+    }
 
-        $perPage = 25;
-        $currentPage = $request->input('page', 1);
-        $currentResults = $transformedCountries->slice(($currentPage - 1) * $perPage, $perPage)->values();
-
-        $paginatedResults = new LengthAwarePaginator($currentResults, $transformedCountries->count(), $perPage, $currentPage, [
+    private function paginate($items, $currentPage)
+    {
+        $currentResults = $items->slice(($currentPage - 1) * self::PER_PAGE, self::PER_PAGE)->values();
+        return new LengthAwarePaginator($currentResults, $items->count(), self::PER_PAGE, $currentPage, [
             'path' => Paginator::resolveCurrentPath()
         ]);
-
-        return response()->json($paginatedResults);
     }
 }

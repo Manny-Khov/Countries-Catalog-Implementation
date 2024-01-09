@@ -87,7 +87,7 @@ export default {
       total: 0,
       totalPages: 0,
       searchQuery: '',
-      sortOrder: '',
+      sortOrder: 'asc',
       showModal: false,
       selectedCountry: null,
     };
