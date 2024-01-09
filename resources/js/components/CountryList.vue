@@ -19,8 +19,8 @@
     <!-- Sorting Buttons -->
     <v-row>
       <v-col cols="12" class="d-flex justify-start">
-        <v-btn color="primary" class="mr-2" @click="setSortOrder('asc')">Sort Asc</v-btn>
-        <v-btn color="primary" @click="setSortOrder('desc')">Sort Desc</v-btn>
+        <v-btn color="primary" class="mr-2" @click="setSortOrder('asc')">Sort Name Asc</v-btn>
+        <v-btn color="primary" @click="setSortOrder('desc')">Sort Name Desc</v-btn>
       </v-col>
     </v-row>
 
